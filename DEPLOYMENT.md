@@ -10,3 +10,8 @@ which received `MAJORITY_AGREE` / `ACCEPTED` at address
 `0x8C55E001F083cb8C08906d07A7c041137670A625`. An immediate cold RPC read reported
 that the contract was not found, so this address is deliberately **not** presented as a canonical
 deployment until a subsequent `get_warranty` read succeeds.
+
+Direct RPC confirmed the transaction lifecycle as `FINALIZED`, while `gen_getContractCode`
+returned `-32001 Contract not found` for the reported address. This source has since been expanded
+with byte-pinned evidence assessment and bounded settlement; it requires a new live deployment
+and post-deployment checks before any address can be called canonical.
