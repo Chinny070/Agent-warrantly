@@ -15,6 +15,7 @@ BREACHED = "BREACHED"
 INCONCLUSIVE = "INCONCLUSIVE"
 BLOCKED = "BLOCKED"
 SETTLED = "SETTLED"
+NO_DEPENDENCY = "NONE"
 
 
 @gl.evm.contract_interface
@@ -125,7 +126,9 @@ class AgentWarranty(gl.Contract):
             raise gl.vm.UserError("invalid obligation")
         if self.obligations.get(obligation_id, None) is not None:
             raise gl.vm.UserError("duplicate obligation")
-        if dependency_id != "" and self.obligations.get(dependency_id, None) is None:
+        if dependency_id in ("", NO_DEPENDENCY):
+            dependency_id = ""
+        elif self.obligations.get(dependency_id, None) is None:
             raise gl.vm.UserError("dependency must precede child")
         self.obligations[obligation_id] = Obligation(obligation_id, requirement, "", "", dependency_id, severity_bps, OPEN, u256(0), max_cure_rounds)
         self.obligation_ids.append(obligation_id)

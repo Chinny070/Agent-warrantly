@@ -13,7 +13,7 @@ Agent Warranty Protocol is a GenLayer Intelligent Contract primitive for escrow-
 
 ## Contract
 
-`contracts/agent_warranty.py` exposes `fund`, `add_obligation`, `delegate`, `submit_evidence`, `record_finding`, `expire`, `settle`, and public views. The model classifies evidence only; contract code determines cure, liability, and transfer amounts.
+`contracts/agent_warranty.py` exposes `fund`, `add_obligation`, `delegate`, `submit_evidence`, `record_finding`, `expire`, `settle`, and public views. Pass `NONE` as the dependency ID for a root obligation (including through the CLI). The model classifies evidence only; contract code determines cure, liability, and transfer amounts.
 
 ## Checks
 
