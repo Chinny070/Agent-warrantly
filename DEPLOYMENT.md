@@ -2,7 +2,38 @@
 
 ## Release status
 
-The initial hardened source is deployed to GenLayer Studionet (chain 61999). A follow-up release addresses evidence-source binding, funding/performance timing, and semantic consistency. The follow-up has not yet been deployed, and no complete live lifecycle is claimed until its source parity and settlement are verified.
+The current hardened source is deployed to GenLayer Studionet (chain 61999), matches the checked-in source, and has completed a full live acceptance → funding → evidence → adjudication → settlement test. This is a transparent protocol-integration test using a public repository fixture, not a third-party commercial performance attestation.
+
+## Current hardened lifecycle deployment
+
+- Network: GenLayer Studionet, chain ID `61999`
+- CLI: global GenLayer CLI `0.39.1`
+- Contract: `0x939f91C18b8Bea9e650B2349dD68aFc99713f904`
+- Deployment transaction: `0x6b0057513d75e96631fc294437e86f684c9e3ae07ad5d43650c32e6d6e01b7e1`
+- Deployment receipt: finalized, `MAJORITY_AGREE`; constructor executed successfully
+- Exact deployed source parity: SHA-256 `dd2da382acb3da1320d3503fa1f24724ee37f07d8a1878fc3a414d5676318210` (matches `contracts/agent_warranty.py`)
+- Deploying/requester account: `0xaffe15eec45b68835cc9e5b4ab85dd5deaE8e70b` (`my-studionet-wallet`, active and unlocked)
+- Provider account: `0x94988d2e6ad5fd385e38630c0ed3bbf219c9a43a` (`rc-provider`, unlocked)
+- Warranty ID: `live-lifecycle-2026-09`
+- Specification SHA-256: `169323f068781f22cd6e727ab803d4131dc5e7494da778293f4e112b75c84c0d`
+- Frozen policy SHA-256: `cbc11205ac37af31037d7ac68c1296fe83bc75ac0758d7b4dc87409a45199fa6`
+- Funding cutoff: Unix `1793132050`; performance duration `2592000` seconds; cure duration `864000` seconds
+- Full funding started the performance window at Unix `1790540237`; performance deadline `1793132237`; cure deadline `1793996237`
+- Accepted configuration digest: `5b64bd5f09f6fb6e2b4c94d9f55c2810b128945497cb8df2697a1f3c324e7880`
+
+### Live lifecycle transactions and readbacks
+
+1. Requester configured obligation `live-proof`: `0xff2cf5134101cc6bb0c49eedfb606c00bf4ab4f7f337e59f763f313f1aead9ed`.
+2. Provider accepted the exact on-chain configuration digest: `0xd48510db9e3e926f356e11e1f23375bddbb9f15b964daf22177e230cde91485d`.
+3. Requester funded `1000000000000000` wei (`0.001` GEN): `0x50697cefd32652523681961f92b7394b2a1a59990b0b5c6007008aa32efb2dd0`. Live readback showed `PERFORMANCE` and full escrow.
+4. Provider submitted pinned evidence: `0xab86ac3902d5fb20f32994d135047bff7dbbb0e1fa83eb14cbfa7fb44b3da059`.
+5. Evidence source: `https://raw.githubusercontent.com/Chinny070/Agent-warrantly/08cf02b843a878eb230b20161a448537951b2d6f/tests/fixtures/live_evidence.txt`; SHA-256 `cba608ac408c7179b494273f769b6da37f779a489142a893589b6acf283997f0`; retrieved live as 199 bytes and byte-matched to the committed fixture.
+6. Permissionless adjudication: `0x3723335097c51758516d30d03eebd2a5368bb6b669352f9bf9ff96750033e465`. Live readback recorded `FULFILLED`, no retrieval failure, and a rationale confirming the exact frozen policy URL matched.
+7. Permissionless settlement: `0xa46db370e0494de051c642a53d5dfd382c2178b67f70852dd12910061ea9c28d`, finalized `MAJORITY_AGREE`; receipt contains a `1000000000000000`-wei transfer to the provider.
+
+Final `get_warranty`: `SETTLED`, escrowed and settled `1000000000000000`, provider payout `1000000000000000`, requester refund `0`. `get_settlement` returned `(1000000000000000, 1000000000000000, 0)`. Post-settlement balances were requester `239.346999999999999988 GEN` and provider `0.0025 GEN` (up from `0.0015 GEN`).
+
+An earlier follow-up deployment attempt finalized with constructor error `invalid warranty ID` because its test ID exceeded the 32-character bound; it created no contract and was not used. The successful deployment above uses a valid ID.
 
 ## Initial hardened deployment (superseded before lifecycle validation)
 
@@ -48,13 +79,13 @@ The live `get_warranty` view returned warranty ID `agent-warranty-v3`, bond `100
 - Settlement was blocked because deployed v3 does not allow replacement evidence after an `INCONCLUSIVE` finding. The v3 contract is immutable; its `expire` method can terminalize unresolved items only after its cure deadline, then its 10000-bps obligation refunds the full bond to the requester on settlement. V3 does not expose that deadline.
 - The escrow value was confirmed by a live read. A transaction hash for the user's funding write was not captured in this task.
 
-## Follow-up source work (not yet deployed)
+## Current source and release checks
 
-- Follow-up source binds the exact evidence URL into the semantic prompt and validator result, separates funding cutoff from the performance window, and fails closed on inconsistent semantic findings.
-- The updated checks and generated schema are release-gated in CI. The local GenLayer CLI patch used during the earlier v3 funding experiment is not upstream-supported and is not a deployment prerequisite or evidence for this release.
-- The new lifecycle deployment address, transaction, parity, and settlement will be recorded here only after live verification.
+- Current source binds the exact evidence URL into semantic policy evaluation and validator results, starts the agreed performance window only when full funding is received, and rejects economically contradictory findings.
+- The strict local Direct Mode gate passes 57 tests; GenVM lint and generated ABI comparison pass. GitHub Actions logs for the preceding run were inaccessible without repository-admin rights. The release workflow now emits failing test cases as public check annotations to make the next remote run diagnosable.
+- The local CLI patch used during an earlier funding experiment is not an upstream-supported deployment prerequisite or evidence for this release.
 
-The global GenLayer CLI 0.39.1 installed in the task environment was locally patched to accept `genlayer write <address> fund --value <wei>`; this patch is not part of the Agentwarrantly repository or the upstream CLI release. Direct Mode verified payable funding and settlement. Live funding is verified as above; live payout has not been completed because the deployed v3 inconclusive obligation cannot be retried before its cure deadline.
+The active CLI supported the payable write used for this live test. The historical v3 payout remains blocked by its immutable inconclusive obligation and is unrelated to the completed payout on the current deployment.
 
 ## Earlier superseded deployment attempts
 

@@ -29,7 +29,33 @@ jobs:
       - name: GenVM lint and validation
         run: genvm-lint check contracts/agent_warranty.py
       - name: Direct Mode adversarial tests
-        run: python -m pytest tests/direct -v --strict-markers
+        run: python -m pytest tests/direct -v --strict-markers --junitxml=direct-mode-results.xml
+      - name: Report Direct Mode failures as check annotations
+        if: failure()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree
+
+          report = Path("direct-mode-results.xml")
+          if not report.exists():
+              print("::error::Direct Mode failed before producing its JUnit report")
+              raise SystemExit(0)
+          root = ElementTree.parse(report).getroot()
+          failed = 0
+          for case in root.iter("testcase"):
+              result = case.find("failure")
+              if result is None:
+                  result = case.find("error")
+              if result is None:
+                  continue
+              failed += 1
+              detail = " ".join((result.get("message", "") + " " + (result.text or "")).split())
+              escaped = detail[:1200].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A").replace(":", "%3A").replace(",", "%2C")
+              print(f"::error file={case.get('file', 'tests/direct')},line={case.get('line', '1')}::FAILED {case.get('name', 'unknown')}: {escaped}")
+          if failed == 0:
+              print("::error::Direct Mode failed but JUnit contained no failing test case")
+          PY
       - name: Regenerate and verify the committed ABI
         run: |
           genvm-lint schema contracts/agent_warranty.py --output abi/agent_warranty.schema.json
