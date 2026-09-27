@@ -16,6 +16,7 @@ def test_contract_has_bounded_cure_and_dependency_guards():
     assert "dependency must precede child" in SOURCE
     assert "CURE_REQUIRED" in SOURCE
     assert "INCONCLUSIVE" in SOURCE
+    assert "MAX_EVIDENCE_RETRIES = u256(3)" in SOURCE
 
 
 def test_contract_uses_genlayer_persistent_collections():

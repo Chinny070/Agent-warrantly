@@ -9,7 +9,7 @@
 - Source commit: `1ee2b52ea9ec6b917942a7cb54320b145df05148`
 - Source parity: exact match from `gen_getContractCode`; SHA-256 `c1bc559425f84acfc1876c8cdd76752c05f767504c4c9a77ffb1c4bac394fdcf`
 
-The live `get_warranty` view returned warranty ID `agent-warranty-v3`, escrow `0`, bond `1000000000000000` wei, settled `0`, and status `OPEN`.
+The live `get_warranty` view returned warranty ID `agent-warranty-v3`, bond `1000000000000000` wei, settled `0`, and status `OPEN`.
 
 ## Live Studionet tests
 
@@ -17,13 +17,22 @@ The live `get_warranty` view returned warranty ID `agent-warranty-v3`, escrow `0
 - Changed/hostile evidence path: evidence transaction `0x6abe794ad014f9bf3e42e3df08bcaa7efed087ba7f9e05376236c68274564387`, assessment transaction `0xcb943f8e6bacc9ede7de8e612bebbbef6590bc93623aadced7455df0e2f7b9c4`; live readback was `INCONCLUSIVE`.
 - Positive pinned text path (`Hello World`, SHA-256 `a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e`): submission transaction `0x96c4abe7287ab0feabe06889848c19c1b53e9cc966d2d27870340f1148584fe1`, assessment transaction `0x0899e72e2fe1834ab20b22809277036cdc0019dcd0d9c518415524ad995ba122`; live readback was `FULFILLED`.
 
+## Live escrow and settlement state (2026-09-27)
+
+- The live `get_warranty` view now shows escrow `1000000000000000` wei (the full `0.001` GEN bond), settled `0`, and status `OPEN`.
+- `smoke-positive` is `FULFILLED`. `smoke-1` is `INCONCLUSIVE` (severity 10000 bps).
+- Settlement is currently blocked: deployed v3 does not allow replacement evidence after an `INCONCLUSIVE` finding. Do not submit `settle` yet; it will revert and cannot release the escrow.
+- The deployed contract is immutable. Its `expire` method can make unresolved items terminal only after the original cure deadline; after expiry, this 10000-bps obligation causes the full bond to be refunded to the requester on settlement. The contract has no view exposing that deadline, so its exact timestamp is not confirmed here.
+- The local source now adds up to three evidence retries before the cure deadline. This fix is covered by Direct Mode tests but is **not deployed** to the existing address; it applies only to a future deployment.
+- The escrow value was confirmed by a live read. A transaction hash for the user's funding write was not captured in this task.
+
 ## Local checks
 
 - `genvm-lint check contracts/agent_warranty.py`: passed lint and SDK validation.
 - `genvm-lint schema contracts/agent_warranty.py`: schema generated.
 - `gltest tests/direct -v`: 7 passed, including dependency gating, funding, hash mismatch, and successful settlement.
 
-The Studionet CLI write command hardcodes `value: 0`, so escrow funding and the resulting recipient transfer were exercised in Direct Mode but not with a payable live transaction. The live warranty therefore remains `OPEN` with zero escrow; no live payout is claimed.
+The global GenLayer CLI 0.39.1 installed in the task environment was locally patched to accept `genlayer write <address> fund --value <wei>`; this patch is not part of the Agentwarrantly repository or the upstream CLI release. Direct Mode verified payable funding and settlement. Live funding is verified as above; live payout has not been completed because the deployed v3 inconclusive obligation cannot be retried before its cure deadline.
 
 ## Superseded attempts
 

@@ -87,6 +87,28 @@ def test_changed_evidence_fails_closed_as_inconclusive(direct_vm, direct_deploy,
     contract.record_finding("root")
     assert contract.get_obligation("root").status == "INCONCLUSIVE"
 
+    replacement = "replacement report"
+    direct_vm.clear_mocks()
+    direct_vm.mock_web(
+        r"evidence\.example/report",
+        {"method": "GET", "status": 200, "body": replacement},
+    )
+    direct_vm.mock_llm("Deliver the signed report", '{"finding":"FULFILLED"}')
+    direct_vm.sender = direct_bob
+    contract.submit_evidence(
+        "root",
+        "https://evidence.example/report",
+        hashlib.sha256(replacement.encode()).hexdigest(),
+    )
+    direct_vm.sender = direct_owner
+    contract.record_finding("root")
+    assert contract.get_obligation("root").status == "FULFILLED"
+
+    direct_vm.value = 100
+    contract.fund()
+    contract.settle()
+    assert contract.get_warranty()[6] == "SETTLED"
+
 
 def test_fulfilled_evidence_settles_and_closes_warranty(direct_vm, direct_deploy, direct_owner, direct_bob):
     now = int(datetime.now(timezone.utc).timestamp())

@@ -8,6 +8,7 @@ Agent Warranty Protocol is a GenLayer Intelligent Contract primitive for escrow-
 - A dependency can only point to an already-recorded obligation, which makes cycles impossible in this bounded v1 graph.
 - Evidence is fetched from a public HTTPS URL by validators, checked against its SHA-256 commitment, and bounded to 12,000 bytes before semantic review.
 - GenLayer validators independently reproduce retrieval, hash verification, and classification. A mismatch becomes `INCONCLUSIVE`.
+- Inconclusive evidence can be replaced up to three times before the cure deadline; retries preserve the frozen requirement and remain separately counted from remediation rounds.
 - Cure rounds and delegated liability caps are bounded on chain; obligations must be added before their prerequisites, so cycles cannot form.
 - Settlement caps aggregate liability at the escrow amount and emits deterministic GEN transfers. Expired unresolved obligations become breached.
 

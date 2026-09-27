@@ -16,6 +16,7 @@ INCONCLUSIVE = "INCONCLUSIVE"
 BLOCKED = "BLOCKED"
 SETTLED = "SETTLED"
 NO_DEPENDENCY = "NONE"
+MAX_EVIDENCE_RETRIES = u256(3)
 
 
 @gl.evm.contract_interface
@@ -39,6 +40,7 @@ class Obligation:
     status: str
     cure_rounds: u256
     max_cure_rounds: u256
+    evidence_retries: u256
 
 
 @allow_storage
@@ -130,7 +132,7 @@ class AgentWarranty(gl.Contract):
             dependency_id = ""
         elif self.obligations.get(dependency_id, None) is None:
             raise gl.vm.UserError("dependency must precede child")
-        self.obligations[obligation_id] = Obligation(obligation_id, requirement, "", "", dependency_id, severity_bps, OPEN, u256(0), max_cure_rounds)
+        self.obligations[obligation_id] = Obligation(obligation_id, requirement, "", "", dependency_id, severity_bps, OPEN, u256(0), max_cure_rounds, u256(0))
         self.obligation_ids.append(obligation_id)
         self.obligation_count = self.obligation_count + u256(1)
 
@@ -162,19 +164,25 @@ class AgentWarranty(gl.Contract):
                 or "@" in evidence_url or "localhost" in host or host.endswith(".local")):
             raise gl.vm.UserError("evidence URL must be a public HTTPS URL")
         now = u256(int(datetime.now(timezone.utc).timestamp()))
-        allowed_deadline = self.cure_deadline if obligation.cure_rounds > u256(0) else self.deadline
+        allowed_deadline = self.cure_deadline if obligation.cure_rounds > u256(0) or obligation.status == INCONCLUSIVE else self.deadline
         if now > allowed_deadline:
             raise gl.vm.UserError("evidence deadline has passed")
+        if obligation.status == INCONCLUSIVE and obligation.evidence_retries >= MAX_EVIDENCE_RETRIES:
+            raise gl.vm.UserError("inconclusive evidence retry limit reached")
         if obligation.dependency_id != "":
             parent = self.obligations.get(obligation.dependency_id, None)
-            if parent is None or parent.status in (BREACHED, BLOCKED, INCONCLUSIVE):
+            if parent is None or parent.status in (BREACHED, BLOCKED):
                 obligation.status = BLOCKED
                 self.obligations[obligation_id] = obligation
                 return
+            if parent.status == INCONCLUSIVE:
+                raise gl.vm.UserError("prerequisite evidence is inconclusive")
             if parent.status != FULFILLED:
                 raise gl.vm.UserError("prerequisite is not fulfilled")
-        if obligation.status not in (OPEN, CURE_REQUIRED, DELIVERED):
+        if obligation.status not in (OPEN, CURE_REQUIRED, DELIVERED, INCONCLUSIVE):
             raise gl.vm.UserError("obligation cannot accept evidence")
+        if obligation.status == INCONCLUSIVE:
+            obligation.evidence_retries = obligation.evidence_retries + u256(1)
         obligation.evidence_url = evidence_url
         obligation.evidence_hash = evidence_hash
         obligation.status = DELIVERED
