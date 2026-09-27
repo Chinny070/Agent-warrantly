@@ -1,0 +1,4 @@
+Agent Warranty Protocol live lifecycle test fixture
+fixture-id: awp-live-lifecycle-2026-09
+status: fulfilled
+claim: The immutable source URL and content commitment are bound to this evidence review.

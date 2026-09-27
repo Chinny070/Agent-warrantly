@@ -2,9 +2,9 @@
 
 ## Release status
 
-The hardened source is deployed to GenLayer Studionet (chain 61999) and matches the checked-in source exactly. This verifies deployment and initial state only; the agreement remains in `DRAFT` with no obligations or escrow, so acceptance, funding, evidence adjudication, and payout are not yet live-tested.
+The initial hardened source is deployed to GenLayer Studionet (chain 61999). A follow-up release addresses evidence-source binding, funding/performance timing, and semantic consistency. The follow-up has not yet been deployed, and no complete live lifecycle is claimed until its source parity and settlement are verified.
 
-## Hardened deployment (current)
+## Initial hardened deployment (superseded before lifecycle validation)
 
 - Network: GenLayer Studionet, chain ID `61999`
 - Contract: `0xbC483C99118D8dFA1d29eF82eE873d79A785CE5b`
@@ -48,11 +48,11 @@ The live `get_warranty` view returned warranty ID `agent-warranty-v3`, bond `100
 - Settlement was blocked because deployed v3 does not allow replacement evidence after an `INCONCLUSIVE` finding. The v3 contract is immutable; its `expire` method can terminalize unresolved items only after its cure deadline, then its 10000-bps obligation refunds the full bond to the requester on settlement. V3 does not expose that deadline.
 - The escrow value was confirmed by a live read. A transaction hash for the user's funding write was not captured in this task.
 
-## Superseding source work (not yet deployed)
+## Follow-up source work (not yet deployed)
 
-- Current source adds an explicit DRAFT/ACCEPTED/PERFORMANCE/TERMINAL/SETTLED lifecycle, permissionless assessment and settlement, full-text frozen evidence policy, bounded retries, attempt provenance, capped obligation graph, hardened URL and response validation, non-reducing delegation metadata, and deterministic payout accounting.
+- Follow-up source binds the exact evidence URL into the semantic prompt and validator result, separates funding cutoff from the performance window, and fails closed on inconsistent semantic findings.
 - The updated checks and generated schema are release-gated in CI. The local GenLayer CLI patch used during the earlier v3 funding experiment is not upstream-supported and is not a deployment prerequisite or evidence for this release.
-- No current hardened address, deployment transaction, finality result, exact deployed-source parity, or live payout is claimed yet.
+- The new lifecycle deployment address, transaction, parity, and settlement will be recorded here only after live verification.
 
 The global GenLayer CLI 0.39.1 installed in the task environment was locally patched to accept `genlayer write <address> fund --value <wei>`; this patch is not part of the Agentwarrantly repository or the upstream CLI release. Direct Mode verified payable funding and settlement. Live funding is verified as above; live payout has not been completed because the deployed v3 inconclusive obligation cannot be retried before its cure deadline.
 

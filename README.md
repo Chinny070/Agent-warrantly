@@ -6,17 +6,17 @@ Agent Warranty Protocol is a GenLayer Intelligent Contract for escrow-backed per
 
 `DRAFT → ACCEPTED → PERFORMANCE → TERMINAL → SETTLED`
 
-- The requester defines the SHA-256 specification commitment, bounded evidence-policy text, deadlines, economic cap, obligations, dependencies, cure limits, and severities in `DRAFT`.
-- The provider accepts the contract-computed configuration digest. It binds the warranty ID, requester/provider, specification commitment, evidence-policy text and hash, deadlines, total bond, ordered obligation set, dependency edges, severities, cure limits, and any delegation metadata.
-- After acceptance, terms cannot change. The requester may fund in partial transfers, but performance and evidence submission do not begin until escrow equals the full agreed amount. Excess funding is rejected.
-- If partial funding is never completed, anyone may cancel after the deadline and the requester receives the partial amount back.
+- The requester defines the SHA-256 specification commitment, bounded evidence-policy text, a funding cutoff, performance and cure durations, economic cap, obligations, dependencies, cure limits, and severities in `DRAFT`.
+- The provider accepts the contract-computed configuration digest. It binds the warranty ID, requester/provider, specification commitment, evidence-policy text and hash, funding cutoff, performance/cure durations, total bond, ordered obligation set, dependency edges, severities, cure limits, and any delegation metadata.
+- After acceptance, terms cannot change. The requester may fund in partial transfers, but the performance clock starts only when escrow reaches the full agreed amount. Its deadline is calculated from that full-funding time, so a late-but-valid requester funding does not consume the provider's performance window. Excess funding is rejected.
+- If partial funding is never completed by the separate funding cutoff, anyone may cancel and the requester receives the partial amount back.
 - A fully funded agreement enters `PERFORMANCE`. Terminal obligation findings move it to `TERMINAL`; anyone may then call deterministic settlement. Replays are rejected.
 
 ## Evidence and adjudication
 
 The provider or the one pre-agreed delegate submits an HTTPS URL and SHA-256 commitment. The contract records every attempt's URL, hash, submitter, timestamp, attempt number, classification, retrieval failure code, and concise rationale. It bounds evidence to 12,000 bytes and allows three replacement attempts, independently of cure rounds.
 
-The full bounded evidence policy is stored on-chain and passed with the frozen obligation requirement to semantic review. Validators independently re-fetch the submitted source, check the HTTP status, exact committed bytes and UTF-8, then assess the same policy and requirement. A positive finding requires both requirement and policy matches and sufficient evidence. HTTP failures, malformed output, retrieval exceptions, invalid encoding, empty/oversized bodies, and hash mismatches fail closed to `INCONCLUSIVE`; an inconclusive result never consumes cure rounds.
+The full bounded evidence policy is stored on-chain and passed with the frozen obligation requirement and exact submitted evidence URL to semantic review. The exact URL is also carried in the leader result and checked by each validator; validators independently re-fetch that source, check the HTTP status, exact committed bytes and UTF-8, then assess the same policy, requirement, and source URL. A positive finding requires a requirement match, policy/source match, and sufficient evidence. A `BREACHED` or `REMEDIABLE` finding requires a policy/source match, sufficient evidence, and a negative requirement match; contradictory combinations fail closed to `INCONCLUSIVE`. HTTP failures, malformed output, retrieval exceptions, invalid encoding, empty/oversized bodies, and hash mismatches also fail closed; an inconclusive result never consumes cure rounds.
 
 Review is permissionless after evidence delivery: neither requester nor provider controls the classification. Validators must agree on the classification, requirement match, policy match, and evidence sufficiency. Rationale and transport diagnostics are not compared exactly because they are explanatory metadata, not settlement inputs.
 

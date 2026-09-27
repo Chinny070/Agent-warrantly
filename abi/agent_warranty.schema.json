@@ -18,11 +18,15 @@
         "string"
       ],
       [
-        "deadline",
+        "funding_deadline",
         "int"
       ],
       [
-        "cure_deadline",
+        "performance_duration",
+        "int"
+      ],
+      [
+        "cure_duration",
         "int"
       ],
       [

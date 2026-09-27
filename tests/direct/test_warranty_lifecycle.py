@@ -21,7 +21,10 @@ def _genlayer_address(raw_address):
     return Address("0x" + raw_address.hex())
 
 
-def _new_contract(direct_deploy, direct_vm, owner, provider, *, bond=100, suffix="case", policy=POLICY):
+def _new_contract(
+    direct_deploy, direct_vm, owner, provider, *, bond=100, suffix="case", policy=POLICY,
+    funding_window=600, performance_duration=600, cure_duration=600,
+):
     now = int(datetime.now(timezone.utc).timestamp())
     direct_vm.sender = owner
     return direct_deploy(
@@ -30,8 +33,9 @@ def _new_contract(direct_deploy, direct_vm, owner, provider, *, bond=100, suffix
         _genlayer_address(provider),
         hashlib.sha256(b"frozen spec").hexdigest(),
         policy,
-        now + 600,
-        now + 1200,
+        now + funding_window,
+        performance_duration,
+        cure_duration,
         bond,
     )
 
@@ -84,12 +88,12 @@ def test_constructor_rejects_invalid_terms_and_zero_bond(direct_vm, direct_deplo
     now = int(datetime.now(timezone.utc).timestamp())
     args = (
         "warranty-invalid", _genlayer_address(direct_bob), hashlib.sha256(b"spec").hexdigest(),
-        POLICY, now + 600, now + 1200, 100,
+        POLICY, now + 600, 600, 600, 100,
     )
     direct_vm.sender = direct_owner
     deploy_args = list(args)
     if invalid_case == "zero-bond":
-        deploy_args[6] = 0
+        deploy_args[7] = 0
     elif invalid_case == "bad-hash":
         deploy_args[2] = "z" * 64
     else:
@@ -140,6 +144,44 @@ def test_funding_requires_acceptance_full_amount_and_no_overfunding(direct_vm, d
     contract.fund()
     direct_vm.value = 0
     assert contract.get_warranty()[3] == "PERFORMANCE"
+
+
+def test_late_full_funding_starts_a_fresh_performance_window(direct_vm, direct_deploy, direct_owner, direct_bob):
+    contract = _new_contract(
+        direct_deploy, direct_vm, direct_owner, direct_bob, suffix="late-funding",
+        funding_window=172800, performance_duration=600, cure_duration=300,
+    )
+    _add_root(contract)
+    _accept_and_fund(contract, direct_vm, direct_owner, direct_bob, bond=100, partial=25)
+    assert contract.performance_started_at == 0
+    assert contract.deadline == 0
+
+    funding_cutoff = int(contract.funding_deadline)
+    late_funding_time = datetime.fromtimestamp(funding_cutoff - 1, timezone.utc)
+    direct_vm.warp(late_funding_time.strftime("%Y-%m-%dT%H:%M:%SZ"))
+    direct_vm.sender = direct_owner
+    direct_vm.value = 75
+    contract.fund()
+    direct_vm.value = 0
+
+    terms = contract.get_warranty()
+    assert terms[3] == "PERFORMANCE"
+    assert terms[9] >= funding_cutoff - 1
+    assert terms[10] == terms[9] + 600
+    assert terms[11] == terms[10] + 300
+
+
+def test_funding_is_rejected_after_funding_cutoff(direct_vm, direct_deploy, direct_owner, direct_bob):
+    contract = _new_contract(direct_deploy, direct_vm, direct_owner, direct_bob, suffix="funding-cutoff")
+    _add_root(contract)
+    direct_vm.sender = direct_bob
+    contract.accept(contract.configuration_digest())
+    direct_vm.warp("2030-01-01T00:00:00Z")
+    direct_vm.sender = direct_owner
+    direct_vm.value = 100
+    with direct_vm.expect_revert("funding deadline has passed"):
+        contract.fund()
+    direct_vm.value = 0
 
 
 def test_only_provider_accepts_and_requester_funds(direct_vm, direct_deploy, direct_owner, direct_bob):
@@ -225,7 +267,7 @@ def test_graph_is_bounded_dag_with_valid_deep_chain_and_bad_dependencies(direct_
     with direct_vm.expect_revert("maximum obligation"):
         for index in range(14):
             contract.add_obligation("node" + str(index), "node", "NONE", 0, 0)
-    assert contract.get_warranty()[11] == 16
+    assert contract.get_warranty()[15] == 16
 
 
 @pytest.mark.parametrize("policy_length,should_fail", [(2048, False), (2049, True)])
@@ -236,12 +278,12 @@ def test_policy_length_is_bounded(direct_vm, direct_deploy, direct_owner, direct
         with direct_vm.expect_revert("policy length"):
             direct_deploy(
                 "contracts/agent_warranty.py", "policy-boundary", _genlayer_address(direct_bob),
-                hashlib.sha256(b"spec").hexdigest(), "p" * policy_length, now + 600, now + 1200, 100,
+                hashlib.sha256(b"spec").hexdigest(), "p" * policy_length, now + 600, 600, 600, 100,
             )
     else:
         contract = direct_deploy(
             "contracts/agent_warranty.py", "policy-boundary", _genlayer_address(direct_bob),
-            hashlib.sha256(b"spec").hexdigest(), "p" * policy_length, now + 600, now + 1200, 100,
+            hashlib.sha256(b"spec").hexdigest(), "p" * policy_length, now + 600, 600, 600, 100,
         )
         assert len(contract.get_evidence_policy()[0]) == policy_length
 
@@ -504,6 +546,9 @@ def test_exact_maximum_evidence_size_is_accepted(direct_vm, direct_deploy, direc
     "{}",
     '{"finding":"NOT_A_FINDING","requirement_match":true,"policy_match":true,"evidence_sufficiency":"SUFFICIENT","rationale":"bad"}',
     '{"finding":"FULFILLED","requirement_match":false,"policy_match":true,"evidence_sufficiency":"SUFFICIENT","rationale":"contradictory"}',
+    '{"finding":"FULFILLED","requirement_match":true,"policy_match":false,"evidence_sufficiency":"SUFFICIENT","rationale":"unapproved source"}',
+    '{"finding":"BREACHED","requirement_match":true,"policy_match":true,"evidence_sufficiency":"SUFFICIENT","rationale":"contradictory breach"}',
+    '{"finding":"REMEDIABLE","requirement_match":false,"policy_match":true,"evidence_sufficiency":"INSUFFICIENT","rationale":"uncertain defect"}',
 ])
 def test_semantic_output_must_be_structured_and_use_frozen_policy(direct_vm, direct_deploy, direct_owner, direct_bob, llm_output):
     contract = _new_contract(direct_deploy, direct_vm, direct_owner, direct_bob, suffix="policy")
@@ -521,6 +566,27 @@ def test_semantic_output_must_be_structured_and_use_frozen_policy(direct_vm, dir
     policy, policy_hash = contract.get_evidence_policy()
     assert policy == POLICY
     assert policy_hash == hashlib.sha256(POLICY.encode()).hexdigest()
+
+
+def test_exact_submitted_source_url_is_bound_into_policy_assessment(direct_vm, direct_deploy, direct_owner, direct_bob):
+    contract = _new_contract(direct_deploy, direct_vm, direct_owner, direct_bob, suffix="source-bound")
+    _add_root(contract)
+    _accept_and_fund(contract, direct_vm, direct_owner, direct_bob)
+    body = "signed receipt from an unapproved mirror"
+    url = "https://untrusted.example/receipt"
+    _submit(contract, direct_vm, direct_bob, body=body, url=url)
+    direct_vm.mock_web(r"untrusted\.example/receipt", {"method": "GET", "status": 200, "body": body})
+    direct_vm.mock_llm(
+        url,
+        '{"finding":"FULFILLED","requirement_match":true,"policy_match":false,'
+        '"evidence_sufficiency":"SUFFICIENT","rationale":"source is not approved"}',
+    )
+    contract.record_finding("root")
+    attempt = contract.get_evidence_attempt("root", 1)
+    assert attempt.evidence_url == url
+    assert attempt.failure_code == ""
+    assert attempt.finding == "INCONCLUSIVE"
+    assert contract.get_obligation("root").status == "INCONCLUSIVE"
 
 
 def test_fetch_exception_fails_closed_and_is_retryable(direct_vm, direct_deploy, direct_owner, direct_bob):
@@ -599,7 +665,7 @@ def test_cure_rounds_and_evidence_retries_are_independent(direct_vm, direct_depl
     direct_vm.mock_web(r"evidence\.example\.com/receipt", {"method": "GET", "status": 200, "body": BODY})
     direct_vm.mock_llm(
         "Accept only signed delivery receipts",
-        '{"finding":"REMEDIABLE","requirement_match":false,"policy_match":true,"evidence_sufficiency":"INSUFFICIENT","rationale":"needs signature"}',
+        '{"finding":"REMEDIABLE","requirement_match":false,"policy_match":true,"evidence_sufficiency":"SUFFICIENT","rationale":"needs signature"}',
     )
     direct_vm.sender = direct_bob
     contract.record_finding("root")
@@ -611,7 +677,7 @@ def test_cure_rounds_and_evidence_retries_are_independent(direct_vm, direct_depl
     direct_vm.mock_web(r"evidence\.example\.com/receipt", {"method": "GET", "status": 200, "body": BODY})
     direct_vm.mock_llm(
         "Accept only signed delivery receipts",
-        '{"finding":"REMEDIABLE","requirement_match":false,"policy_match":true,"evidence_sufficiency":"INSUFFICIENT","rationale":"still needs signature"}',
+        '{"finding":"REMEDIABLE","requirement_match":false,"policy_match":true,"evidence_sufficiency":"SUFFICIENT","rationale":"still needs signature"}',
     )
     contract.record_finding("root")
     assert contract.get_obligation("root").status == "BREACHED"
