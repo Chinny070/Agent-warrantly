@@ -82,7 +82,7 @@ The live `get_warranty` view returned warranty ID `agent-warranty-v3`, bond `100
 ## Current source and release checks
 
 - Current source binds the exact evidence URL into semantic policy evaluation and validator results, starts the agreed performance window only when full funding is received, and rejects economically contradictory findings.
-- The strict local Direct Mode gate passes 57 tests; GenVM lint and generated ABI comparison pass. GitHub Actions exposed the earlier failure: `gltest` requested legacy `genvm-universal.tar.xz`, while the pinned release publishes `genvm-runners-all.tar.xz` (404). CI now caches the correctly named runner bundle after verifying its published SHA-256; tests pin the runner release to `v0.3.0-rc7`. The remote verification run is pending.
+- The strict local Direct Mode gate passes 57 tests; GenVM lint and generated ABI comparison pass. GitHub Actions exposed the earlier failure: `gltest` requested legacy `genvm-universal.tar.xz`, while the pinned release publishes `genvm-runners-all.tar.xz` (404). CI now caches the correctly named runner bundle after verifying its published SHA-256; tests pin the runner release to `v0.3.0-rc7`. GitHub Actions run `36349308769` for commit `cbbb183` passed all steps, including the 57-test Direct Mode suite and ABI comparison.
 - The local CLI patch used during an earlier funding experiment is not an upstream-supported deployment prerequisite or evidence for this release.
 
 The active CLI supported the payable write used for this live test. The historical v3 payout remains blocked by its immutable inconclusive obligation and is unrelated to the completed payout on the current deployment.
