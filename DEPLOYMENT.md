@@ -2,7 +2,27 @@
 
 ## Release status
 
-The final hardened source is **not deployed** yet. Do not treat the v3 address below as current or reviewer-ready. A fresh Studionet 61999 deployment and complete payout lifecycle are still release requirements.
+The hardened source is deployed to GenLayer Studionet (chain 61999) and matches the checked-in source exactly. This verifies deployment and initial state only; the agreement remains in `DRAFT` with no obligations or escrow, so acceptance, funding, evidence adjudication, and payout are not yet live-tested.
+
+## Hardened deployment (current)
+
+- Network: GenLayer Studionet, chain ID `61999`
+- Contract: `0xbC483C99118D8dFA1d29eF82eE873d79A785CE5b`
+- Deployment transaction: `0xacb6e177edee76153acb5b0fb95a10c05c88d8b73b7687df4a09e9e8e6c7f543`
+- Receipt: finalized, `MAJORITY_AGREE`; leader and validator executions succeeded
+- Deploying/requester account: `0xaffe15eec45b68835cc9e5b4ab85dd5deaE8e70b` (active and unlocked GenLayer CLI account at deployment)
+- Provider account: `0x94988d2e6ad5fd385e38630c0ed3bbf219c9a43a` (`rc-provider`, unlocked CLI account)
+- Warranty ID: `agent-warranty-reviewer-2026-09`
+- Specification SHA-256: `169323f068781f22cd6e727ab803d4131dc5e7494da778293f4e112b75c84c0d` (the repository's supplied audit/benchmark document)
+- Evidence-policy SHA-256: `f85e3ea44cd1e7d2883820cad92790a8d320930f6f923dbf2543e05674555808`
+- Deadline: Unix `1793127401` (2026-10-27 18:56:41 UTC)
+- Cure deadline: Unix `1793991401` (2026-11-06 18:56:41 UTC)
+- Agreement amount: `1000000000000000` wei (`0.001` GEN); escrowed: `0`
+- Live `get_warranty` read: status `DRAFT`, obligation count `0`, escrow `0`, settled `0`, provider payout `0`, requester refund `0`
+- Live `get_evidence_policy` read matched the submitted frozen policy and returned the hash above
+- Live deployed-source parity: exact text match; SHA-256 `ffbcede63a98f6173e8b1354ffd16e83a1f64c778a57179b47ed60ab3e96d357` (same as `contracts/agent_warranty.py`)
+
+The provider account and agreement terms were selected from available CLI context and the prior `0.001` GEN agreement amount to carry out the deployment autonomously. They are immutable constructor terms. No claim is made that the provider has accepted this new agreement or that any funds have been transferred to it.
 
 ## Historical deployment: v3 (superseded)
 
