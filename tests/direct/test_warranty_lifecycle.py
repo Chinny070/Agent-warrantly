@@ -10,12 +10,13 @@ POLICY = (
     "self-authored assertions."
 )
 BODY = "signed receipt: warranty=review-1; completed=2026-09-27T12:00:00Z"
+DIRECT_SDK_VERSION = "v0.3.0-rc7"
 
 
 def _genlayer_address(raw_address):
     from gltest.direct.sdk_loader import setup_sdk_paths
 
-    setup_sdk_paths(Path("contracts/agent_warranty.py").resolve())
+    setup_sdk_paths(Path("contracts/agent_warranty.py").resolve(), DIRECT_SDK_VERSION)
     from genlayer import Address
 
     return Address("0x" + raw_address.hex())
@@ -37,6 +38,7 @@ def _new_contract(
         performance_duration,
         cure_duration,
         bond,
+        sdk_version=DIRECT_SDK_VERSION,
     )
 
 
@@ -99,7 +101,7 @@ def test_constructor_rejects_invalid_terms_and_zero_bond(direct_vm, direct_deplo
     else:
         deploy_args[1] = _genlayer_address(direct_owner)
     with direct_vm.expect_revert(expected):
-        direct_deploy("contracts/agent_warranty.py", *deploy_args)
+        direct_deploy("contracts/agent_warranty.py", *deploy_args, sdk_version=DIRECT_SDK_VERSION)
 
 
 def test_configuration_acceptance_freezes_terms_and_requires_digest(direct_vm, direct_deploy, direct_owner, direct_bob):
@@ -279,11 +281,13 @@ def test_policy_length_is_bounded(direct_vm, direct_deploy, direct_owner, direct
             direct_deploy(
                 "contracts/agent_warranty.py", "policy-boundary", _genlayer_address(direct_bob),
                 hashlib.sha256(b"spec").hexdigest(), "p" * policy_length, now + 600, 600, 600, 100,
+                sdk_version=DIRECT_SDK_VERSION,
             )
     else:
         contract = direct_deploy(
             "contracts/agent_warranty.py", "policy-boundary", _genlayer_address(direct_bob),
             hashlib.sha256(b"spec").hexdigest(), "p" * policy_length, now + 600, 600, 600, 100,
+            sdk_version=DIRECT_SDK_VERSION,
         )
         assert len(contract.get_evidence_policy()[0]) == policy_length
 
