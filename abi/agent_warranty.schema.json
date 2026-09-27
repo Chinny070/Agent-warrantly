@@ -1,0 +1,267 @@
+{
+  "ctor": {
+    "params": [
+      [
+        "warranty_id",
+        "string"
+      ],
+      [
+        "provider",
+        "address"
+      ],
+      [
+        "specification_hash",
+        "string"
+      ],
+      [
+        "evidence_policy",
+        "string"
+      ],
+      [
+        "deadline",
+        "int"
+      ],
+      [
+        "cure_deadline",
+        "int"
+      ],
+      [
+        "total_bond_wei",
+        "int"
+      ]
+    ],
+    "kwparams": {}
+  },
+  "methods": {
+    "accept": {
+      "params": [
+        [
+          "proposed_digest",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "add_obligation": {
+      "params": [
+        [
+          "obligation_id",
+          "string"
+        ],
+        [
+          "requirement",
+          "string"
+        ],
+        [
+          "dependency_id",
+          "string"
+        ],
+        [
+          "severity_bps",
+          "int"
+        ],
+        [
+          "max_cure_rounds",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "cancel_unfunded": {
+      "params": [],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "configuration_digest": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "string"
+    },
+    "delegate": {
+      "params": [
+        [
+          "obligation_id",
+          "string"
+        ],
+        [
+          "delegate_provider",
+          "address"
+        ],
+        [
+          "scope_hash",
+          "string"
+        ],
+        [
+          "internal_liability_cap_wei",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "expire": {
+      "params": [],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "fund": {
+      "params": [],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": true
+    },
+    "get_delegation": {
+      "params": [
+        [
+          "obligation_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "obligation_id": "string",
+        "delegate": "address",
+        "scope_hash": "string",
+        "internal_liability_cap_wei": "int"
+      }
+    },
+    "get_evidence_attempt": {
+      "params": [
+        [
+          "obligation_id",
+          "string"
+        ],
+        [
+          "attempt_number",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "obligation_id": "string",
+        "attempt_number": "int",
+        "evidence_url": "string",
+        "evidence_hash": "string",
+        "submitter": "address",
+        "submitted_at": "int",
+        "finding": "string",
+        "failure_code": "string",
+        "rationale": "string"
+      }
+    },
+    "get_evidence_policy": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": [
+        "string",
+        "string"
+      ]
+    },
+    "get_obligation": {
+      "params": [
+        [
+          "obligation_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": {
+        "obligation_id": "string",
+        "requirement": "string",
+        "dependency_id": "string",
+        "severity_bps": "int",
+        "status": "string",
+        "max_cure_rounds": "int",
+        "cure_rounds": "int",
+        "evidence_retries": "int",
+        "attempt_count": "int",
+        "evidence_url": "string",
+        "evidence_hash": "string"
+      }
+    },
+    "get_obligation_id": {
+      "params": [
+        [
+          "index",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "string"
+    },
+    "get_settlement": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": [
+        "int",
+        "int",
+        "int"
+      ]
+    },
+    "get_warranty": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "array"
+    },
+    "record_finding": {
+      "params": [
+        [
+          "obligation_id",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "settle": {
+      "params": [],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "submit_evidence": {
+      "params": [
+        [
+          "obligation_id",
+          "string"
+        ],
+        [
+          "evidence_url",
+          "string"
+        ],
+        [
+          "evidence_hash",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    }
+  }
+}
